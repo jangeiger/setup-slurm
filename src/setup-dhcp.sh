@@ -11,12 +11,14 @@ source prefix.sh
 # ---- Install Configuration for DHCP ----
 
 # Set variables
+THIS_SERVER_IP="192.168.0.1"
 DHCP_RANGE_START="192.168.0.10"
 DHCP_RANGE_END="192.168.0.200"
-SUBNET="192.168.0.1"
+SUBNET="192.168.0.0"
 NETMASK="255.255.255.0"
-GATEWAY="192.168.0.1"
-DNS="192.168.0.1"
+GATEWAY=$THIS_SERVER_IP
+DNS=$THIS_SERVER_IP
+NETPLAN_CONF="/etc/netplan/50-cloud-init.yaml"
 
 # ----------------------------------------
 
@@ -67,6 +69,30 @@ select INTERFACE in $interfaces; do
         echo -e "$ERROR Invalid selection. Please try again."
     fi
 done
+
+# setup static IP on interface
+echo -e "$DEBUG Setting up static IP address on the given ethernet interface"
+
+# Backup the original Netplan file before modifying it
+cp $NETPLAN_CONF $NETPLAN_CONF.bak
+
+echo "    $INTERFACE:" >> "$NETPLAN_CONF"
+echo "    dhcp4: false" >> "$NETPLAN_CONF"
+echo "    addresses:" >> "$NETPLAN_CONF"
+echo "        - $THIS_SERVER_IP/24" >> "$NETPLAN_CONF"
+
+
+# Apply the Netplan configuration
+echo -e "$DEBUG Applying Netplan configuration..."
+netplan apply || { echo -e "$ERROR Failed to apply Netplan configuration."; exit 1; }
+
+# Check if setting the IP was successfull
+if ip addr show $INTERFACE | grep -q "inet $THIS_SERVER_IP"; then
+    echo -e "$SUCCESS Set static IP $THIS_SERVER_IP for interface $INTERFACE"
+else
+    echo -e "$ERROR Could not set static IP $THIS_SERVER_IP for interface $INTERFACE"
+    exit 1
+fi
 
 
 # install isc server
