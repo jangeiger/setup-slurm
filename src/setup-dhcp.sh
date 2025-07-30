@@ -40,7 +40,7 @@ HOSTS=(
 
 # Check if the script is running as root
 if [ "$(id -u)" -ne 0 ]; then
-    echo "This script must be run as root!"
+    echo -e "$ERROR This script must be run as root!"
     exit 1
 fi
 
