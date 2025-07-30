@@ -54,7 +54,7 @@ An example of such a configuration is given below:
         range 192.168.0.10 192.168.0.200;       # The range of IPs that can be assigned to clients
         option routers 192.168.0.1;             # Default gateway (router)
         option subnet-mask 255.255.255.0;       # Subnet mask
-        option domain-name-servers 192.168.0.1;  # DNS servers
+        option domain-name-servers 192.168.0.1; # DNS servers
     }
 
 We insert the IP of the device itself as the name server, since we will be hosting our own name server on this same server.
@@ -67,6 +67,7 @@ and add
 
     INTERFACESv4="eth0"
 
+where you have to replace the interface with the correct interface where you want to server the DHCP server.
 Now we can start the DHCP server via
 
     sudo systemctl start isc-dhcp-server
@@ -143,4 +144,48 @@ and set the following options
         listen-on { any; };
         allow-query { any; };
     };
+
+Make sure to set the device to resolve the DNS request via the newly setup DNS server via
+
+    sudo resolvectl dns eth0 192.168.0.1
+
+
+## Setup slurm master
+
+Next, we setup the master node.
+Again, this can be either done by the automated install script
+
+    sudo bash setup-master.sh
+
+which executes the commands listed below.
+
+
+### Setup munge
+
+First, we need to setup munge for the authentication.
+It can be installed via
+
+    sudo apt update
+    sudo apt install munge libmunge2 libmunge-dev
+
+We check if it is working as expected by running
+
+    munge -n | unmunge | grep STATUS
+
+and looking for Success in the output.
+Lastly, we enable munge to automatically start on boot
+
+    sudo systemctl enable munge
+    sudo systemctl restart munge
+
+and check one last time if it is working as expected
+
+    sudo systemctl status munge
+
+
+### Install slurm
+
+install slurm
+
+    sudo apt install slurm-wlm
 
