@@ -25,7 +25,7 @@ NETPLAN_CONF="/etc/netplan/50-cloud-init.yaml"
 # ---- Install Configuration for name ----
 
 
-ZONE_NAME="local"
+ZONE_NAME="cluster"
 ZONE_FILE="/etc/bind/zones/db.${ZONE_NAME}"
 ZONE_DIR="/etc/bind/zones"
 
@@ -77,8 +77,8 @@ echo -e "$DEBUG Setting up static IP address on the given ethernet interface"
 cp $NETPLAN_CONF $NETPLAN_CONF.bak
 
 echo "    $INTERFACE:" >> "$NETPLAN_CONF"
-echo "    dhcp4: false" >> "$NETPLAN_CONF"
-echo "    addresses:" >> "$NETPLAN_CONF"
+echo "      dhcp4: false" >> "$NETPLAN_CONF"
+echo "      addresses:" >> "$NETPLAN_CONF"
 echo "        - $THIS_SERVER_IP/24" >> "$NETPLAN_CONF"
 
 
@@ -86,7 +86,7 @@ echo "        - $THIS_SERVER_IP/24" >> "$NETPLAN_CONF"
 echo -e "$DEBUG Applying Netplan configuration..."
 netplan apply || { echo -e "$ERROR Failed to apply Netplan configuration."; exit 1; }
 
-# Check if setting the IP was successfull
+# Check if setting the IP was successful
 if ip addr show $INTERFACE | grep -q "inet $THIS_SERVER_IP"; then
     echo -e "$SUCCESS Set static IP $THIS_SERVER_IP for interface $INTERFACE"
 else
@@ -109,6 +109,7 @@ subnet $SUBNET netmask $NETMASK {
     range $DHCP_RANGE_START $DHCP_RANGE_END;
     option routers $GATEWAY;
     option subnet-mask $NETMASK;
+    option domain-name $ZONE_NAME;
     option domain-name-servers $DNS;
 }
 EOF
@@ -172,7 +173,7 @@ EOF
 
 # Add host entries
 for name in "${!HOSTS[@]}"; do
-    echo "${name}    IN      A       ${HOSTS[$name]}" >> "$ZONE_FILE"
+    echo -e "${name}\tIN      A       ${HOSTS[$name]}" >> "$ZONE_FILE"
 done
 
 echo -e "$SUCCESS Zone file created."
@@ -186,14 +187,17 @@ zone "${ZONE_NAME}" {
 };
 EOF
 
-echo -e "$DEBUG Updating named.conf.options..."
-sed -i '/^options {/a \ \ \ \ allow-query { any; };' /etc/bind/named.conf.options
-sed -i '/^options {/a \ \ \ \ listen-on { any; };' /etc/bind/named.conf.options
-sed -i '/forwarders {/a \ \ \ \ \ \ 8.8.8.8;' /etc/bind/named.conf.options || true
+# echo -e "$DEBUG Updating named.conf.options..."
+# sed -i '/^options {/a \ \ \ \ allow-query { any; };' /etc/bind/named.conf.options
+# sed -i '/^options {/a \ \ \ \ listen-on { any; };' /etc/bind/named.conf.options
 
 echo -e "$DEBUG Checking configuration..."
 named-checkconf
 named-checkzone "$ZONE_NAME" "$ZONE_FILE"
+
+# setup dns lookup for the correct interface
+sudo resolvectl dns $INTERFACE $THIS_SERVER_IP
+
 
 echo -e "$DEBUG Restarting BIND9..."
 systemctl restart bind9
