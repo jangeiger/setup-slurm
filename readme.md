@@ -185,7 +185,66 @@ and check one last time if it is working as expected
 
 ### Install slurm
 
-install slurm
+We now install slurm via
+
+    sudo apt install slurm-wlm
+
+Before we can start the service, we need to setup the slurm config.
+This is done via
+
+    sudo vim /etc/slurm/slurm.conf
+
+Here is a basic minimum working example.
+Please modify to your use, or use the HTML slurm config generator:
+
+    # SLURM CONFIGURATION
+    ClusterName=cluster1
+    SlurmctldHost=<your-hostname-here>
+
+    StateSaveLocation=/var/spool/slurmctld
+
+    # COMPUTE NODES
+    NodeName=worker-1 CPUs=8 RealMemory=16000 State=UNKNOWN
+    PartitionName=debug Nodes=ALL Default=YES MaxTime=INFINITE State=UP
+
+We are pointing the state save to /var/spool/slurmctld. We now need to create this folder, since slurm will not be executed with root permissions, making it impossible to create this folder.
+Thus, we run
+
+    sudo mkdir /var/spool/slurmctld
+    sudo chown slurm:slurm /var/spool/slurmctld
+    sudo chmod 700 /var/spool/slurmctld
+
+Now we can start the service and check if everything works.
+
+    sudo systemctl restart slurmctld
+
+If you didn't get an error - nice, probably everything is working fine.
+But to be sure you can double check
+
+    sudo systemctl status slurmctld
+
+Now everything that is left is setting up the worker node, adding them to the slurm.conf and then you are done!
+
+
+## Setup slurm worker
+
+The script for setting up a worker node can be executed as follows:
+
+    sudo bash install-worker.sh
+
+Alternatively you can also manually follow the commands listed below.
+
+### Install munge
+
+We install munge (same as master):
+
+    sudo apt update
+    sudo apt install munge libmunge2 libmunge-dev
+    sudo systemctl enable munge
+
+### Install slurm
+
+And again slurm:
 
     sudo apt install slurm-wlm
 
