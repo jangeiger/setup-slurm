@@ -179,6 +179,12 @@ done
 echo -e "$SUCCESS Zone file created."
 
 echo -e "$DEBUG Updating named.conf.local..."
+# check if the zone was already defined (if for example this script is run multiple times)
+if grep -q "zone \"$ZONE_NAME\"" "/etc/bind/named.conf.local"; then
+    echo -e "$WARNING The zone was already previously defined. It will be overwritten with the new config."
+    sed -i "/zone \"$ZONE_NAME\"/,/};/c zone \"$ZONE_NAME\" {\n    type master;\n    file \"/etc/bind/zones/db.$ZONE_NAME\";\n};" "/etc/bind/named.conf.local"
+else
+# If it doesn't exist, append the block to the end of the file
 cat >> /etc/bind/named.conf.local <<EOF
 
 zone "${ZONE_NAME}" {
@@ -186,6 +192,7 @@ zone "${ZONE_NAME}" {
     file "${ZONE_FILE}";
 };
 EOF
+fi
 
 # echo -e "$DEBUG Updating named.conf.options..."
 # sed -i '/^options {/a \ \ \ \ allow-query { any; };' /etc/bind/named.conf.options
