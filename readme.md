@@ -9,6 +9,25 @@ It is generally structured in the following components:
  - Slurm Worker Nodes
 
 
+## Automated installation
+
+If you just want to get started you can just run the fully automated installation scripts.
+For the DHCP and name server you have to run
+
+    sudo bash setup-dhcp.sh
+
+on the node which is supposed to host those services.
+Next, you set up the master node by running
+
+    sudo bash setup-master.sh
+
+And lastly on each worker node you run
+
+    sudo bash setup-worker.sh
+
+Below, there is an explanation on what those scripts do in detail, in case anything goes wrong.
+
+
 ## DHCP and Name sever
 
 ### DHCP server
@@ -234,6 +253,20 @@ The script for setting up a worker node can be executed as follows:
 
 Alternatively you can also manually follow the commands listed below.
 
+
+### Copy config files
+
+We require the key from the master node, as well as the same slurm config on all worker nodes.
+Probably the easiest way of achieving this is by using scp.
+Here, we copy the cluster configuration from the master node
+
+    scp root@master.cluster:/etc/slurm/slurm.conf /etc/slurm/slurm.conf
+
+and do the same with the munge key for authentication
+
+    scp root@master.cluster:/etc/slurm/slurm.conf /etc/slurm/slurm.conf
+
+
 ### Install munge
 
 We install munge (same as master):
@@ -242,9 +275,10 @@ We install munge (same as master):
     sudo apt install munge libmunge2 libmunge-dev
     sudo systemctl enable munge
 
+
 ### Install slurm
 
-And again slurm:
+Lastly, we also install slurm:
 
     sudo apt install slurm-wlm
 
