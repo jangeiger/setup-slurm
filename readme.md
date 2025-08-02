@@ -295,3 +295,92 @@ The node should now also be visible in the slurm queue information
 
     sinfo
 
+
+## Setup Accounting
+
+If you want to store data about resource usage permanently, you have to setup a database.
+It is recommended to setup this database on a different node than the master node.
+This step is also optional, why we explain it at the end
+Here, we use a mysql database, which we install via
+
+    sudo apt install mysql-server
+
+We will require this database to be starting automatically and to be running
+
+    sudo systemctl enable  mysql
+    sudo systemctl start mysql
+
+Next, we have to setup the database
+
+    sudo mysql -p
+
+Within the sql terminal we run
+
+    CREATE DATABASE slurm_acct_db;
+
+to create a new database.
+Lastly, we setup slurm as a user
+
+    CREATE USER 'slurm'@'localhost' IDENTIFIED BY 'slurm_password';
+    GRANT ALL PRIVILEGES ON slurm_acct_db.* TO 'slurm'@'localhost';
+    FLUSH PRIVILEGES;
+
+    exit
+
+Now we are done with the setup and have to add the accounting setup to the slurm configuration in /etc/slurm/slurm.conf
+
+    # Accounting
+    AccountingStorageType=accounting_storage/slurmdbd
+    AccountingStorageHost=slurm-master
+    AccountingStorageUser=slurm
+    AccountingStoragePort=6819
+
+We could have directly pumped data into mysql by setting the storate type to accounting_storage/mysql, but we use slurmdbd, the official slurm database
+
+    sudo apt install slurmdbd
+
+Which we also have to configure by editing
+
+    sudo vim /etc/slurm/slurmdbd.conf
+
+and inserting
+
+    ArchiveEvents=yes
+    ArchiveJobs=yes
+    ArchiveResvs=yes
+    ArchiveSteps=yes
+    ArchiveSuspend=yes
+    ArchiveTXN=yes
+    ArchiveUsage=yes
+    AuthType=auth/munge
+    DbdHost=localhost
+    DebugLevel=info
+    #PurgeEventAfter=1month
+    #PurgeJobAfter=12month
+    #PurgeResvAfter=1month
+    #PurgeStepAfter=1month
+    #PurgeSuspendAfter=1month
+    #PurgeTXNAfter=12month
+    #PurgeUsageAfter=24month
+    LogFile=/var/log/slurmdbd.log
+    PidFile=/var/run/slurmdbd.pid
+    SlurmUser=slurm
+    StoragePass=slurm_password
+    StorageType=accounting_storage/mysql
+    StorageUser=slurm
+
+Make sure that the config file can be read by slurmdbd
+
+    sudo chmod 600 /etc/slurm/slurmdbd.conf
+    sudo chown slurm:slurm /etc/slurm/slurmdbd.conf
+
+
+And setup the scripts for logging
+
+    sudo touch /var/log/slurmdbd.log
+    sudo chown slurm:slurm /var/log/slurmdbd.log
+
+Lastly we start the database
+
+    sudo systemctl enable slurmdbd
+    sudo systemctl start slurmdbd
