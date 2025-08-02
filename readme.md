@@ -282,3 +282,16 @@ Lastly, we also install slurm:
 
     sudo apt install slurm-wlm
 
+This time we do not enable the control daemon, but just the "regular" slurm daemon
+
+    systemctl enable slurmd
+    systemctl restart slurmd
+
+Now we check the status to make sure everything worked:
+
+    systemctl status slurmd
+
+The node should now also be visible in the slurm queue information
+
+    sinfo
+
