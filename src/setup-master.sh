@@ -15,6 +15,9 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 
+echo -e "$DEBUG Setting up $(hostname) as slurm master node..."
+
+
 # Install munge
 source setup-munge.sh
 
@@ -22,7 +25,7 @@ source setup-munge.sh
 # Setup slurm
 
 echo -e "$DEBUG Installing slurm..."
-sudo apt update -q || { echo -e "$ERROR Failed to update package list."; exit 1; }
+sudo apt update -qq || { echo -e "$ERROR Failed to update package list."; exit 1; }
 sudo apt install -y slurm-wlm || { echo -e "$ERROR Failed to install slurm-wlm."; exit 1; }
 
 
@@ -33,14 +36,14 @@ if [ ! -f "/etc/slurm/slurm.conf" ]; then
     echo -e "$DEBUG Please modify this config for your use-case"
 
     cat >> /etc/slurm/slurm.conf <<EOF
-    ClusterName=cluster1
-    SlurmctldHost=$(hostname)
-    StateSaveLocation=/var/spool/slurmctld
+ClusterName=cluster1
+SlurmctldHost=$(hostname)
+StateSaveLocation=/var/spool/slurmctld
 
-    # COMPUTE NODES
-    #TODO: You need to define your computational nodes here!
-    # NodeName=worker1.cluster CPUs=?? RealMemory=?? State=UNKNOWN
-    # PartitionName=main Nodes=ALL Default=YES MaxTime=INFINITE State=UP
+# COMPUTE NODES
+#TODO: You need to define your computational nodes here!
+# NodeName=worker1.cluster CPUs=?? RealMemory=?? State=UNKNOWN
+# PartitionName=main Nodes=ALL Default=YES MaxTime=INFINITE State=UP
 EOF
 else
     echo -e "$DEBUG Already found slurm configuration - will not modify"
