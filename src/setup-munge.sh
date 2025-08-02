@@ -17,7 +17,7 @@ fi
 
 # Install munge
 echo -e "$DEBUG Installing munge..."
-sudo apt update -q || { echo -e "$ERROR Failed to update package list."; exit 1; }
+sudo apt update -qq || { echo -e "$ERROR Failed to update package list."; exit 1; }
 sudo apt install -y munge libmunge2 libmunge-dev || { echo -e "$ERROR Failed to install munge."; exit 1; }
 
 # Check installation
